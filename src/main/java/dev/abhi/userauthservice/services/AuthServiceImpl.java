@@ -70,13 +70,13 @@ public class AuthServiceImpl implements IAuthService {
             throw new UserNotRegisteredException("User with email " + email + " does not exist");
         }
 
-            User user = optionalUser.get();
+        User user = optionalUser.get();
 
-            if (!user.getPassword().equals(password)) {
-                throw new IncorrectPasswordException("Invalid password for email " + email);
+        if (!user.getPassword().equals(password)) {
+            throw new IncorrectPasswordException("Invalid password for email " + email);
 
-            }else {
-                return user;
-            }
+        }else {
+            return user;
+        }
     }
 }
