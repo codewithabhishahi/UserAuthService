@@ -1,9 +1,7 @@
 package dev.abhi.userauthservice.controllers;
 
 
-import dev.abhi.userauthservice.dtos.LoginRequestDTO;
-import dev.abhi.userauthservice.dtos.SignupRequestDTO;
-import dev.abhi.userauthservice.dtos.UserDTO;
+import dev.abhi.userauthservice.dtos.*;
 import dev.abhi.userauthservice.dtos.UserDTO;
 import dev.abhi.userauthservice.models.User;
 import dev.abhi.userauthservice.pojo.UserToken;
@@ -19,6 +17,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @RequestMapping("/auth")
@@ -63,6 +62,15 @@ public class AuthController {
             ResponseEntity responseEntity = new ResponseEntity(e.getMessage(), HttpStatus.BAD_REQUEST);
             return  responseEntity;
         }
+    }
+
+    @PostMapping("/validateToken")
+    public  ResponseEntity<String> validateToken(@RequestBody ValidateTokenDTO validateTokenDTO) {
+        Boolean result = authService.validateToken(validateTokenDTO.getToken());
+        if(result == false){
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+        }
+        return new ResponseEntity("Token is valid", HttpStatus.OK);
     }
 
 }

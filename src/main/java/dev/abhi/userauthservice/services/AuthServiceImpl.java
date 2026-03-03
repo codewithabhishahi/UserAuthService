@@ -11,7 +11,9 @@ import dev.abhi.userauthservice.pojo.UserToken;
 import dev.abhi.userauthservice.repositories.RoleRepository;
 import dev.abhi.userauthservice.repositories.SessionRepository;
 import dev.abhi.userauthservice.repositories.UserRepository;
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwt;
+import io.jsonwebtoken.JwtParser;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.MacAlgorithm;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,6 +31,9 @@ public class AuthServiceImpl implements IAuthService {
 
     @Autowired
     private RoleRepository roleRepository;
+
+    @Autowired
+    private SecretKey secretKey;
 
     @Autowired
     private SessionRepository sessionRepository;
@@ -102,10 +107,10 @@ public class AuthServiceImpl implements IAuthService {
             payload.put("scope", user.getRole());
 
             // Header for JWT token
-            MacAlgorithm algorithm = Jwts.SIG.HS256;
+//            MacAlgorithm algorithm = Jwts.SIG.HS256; // already defined in the secretKey bean configuration
 
             // Secret key for signing the JWT token (In production, use a secure key and store it safely)
-            SecretKey secretKey = algorithm.key().build();
+//            SecretKey secretKey = algorithm.key().build(); // already defined in the secretKey bean configuration
 
             String token = Jwts.builder()
                     .setHeaderParam("typ", "JWT")
@@ -128,5 +133,31 @@ public class AuthServiceImpl implements IAuthService {
 
             return new UserToken(user, token);
         }
+    }
+
+    @Override
+    public Boolean validateToken(String token) {
+
+        Optional<Session> optionalSession = sessionRepository.findByToken(token);
+
+        if (optionalSession.isEmpty()) {
+            return false;
+        }
+        JwtParser jwtParser = Jwts.parser().verifyWith(secretKey).build();
+        Claims claims = jwtParser.parseSignedClaims(token).getPayload();
+
+        Long expiryTime = claims.get("expiry", Long.class);
+        Long currentTime = System.currentTimeMillis();
+
+        if (expiryTime < System.currentTimeMillis()) {
+            // Invalidate the session in the database
+            Session session = optionalSession.get();
+            session.setState(State.INACTIVE);
+            session.setUpdatedAt(new Date());
+            sessionRepository.save(session);
+            return false;
+        }
+        return true;
+
     }
 }
